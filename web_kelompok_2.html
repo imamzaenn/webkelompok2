@@ -1,0 +1,1592 @@
+<!DOCTYPE html>
+<html lang="id" class="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web Kelompok 2</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#fff7ed',
+                            100: '#ffedd5',
+                            500: '#f97316', // Orange modern
+                            600: '#ea580c',
+                            700: '#c2410c',
+                        },
+                        darkblue: {
+                            800: '#1e293b',
+                            900: '#0f172a',
+                            950: '#020617',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Font Inter & FontAwesome Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- QR libraries: jsQR (scan) & qrcodejs (generate) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        @keyframes scanline {
+            0% { top: 6%; }
+            50% { top: 92%; }
+            100% { top: 6%; }
+        }
+        .scan-line { position: absolute; left: 6%; right: 6%; height: 2px; background: #f97316;
+            box-shadow: 0 0 12px 2px rgba(249, 115, 22, .8); animation: scanline 2.2s ease-in-out infinite; }
+        #qr-render img, #qr-render canvas { width: 100% !important; height: auto !important; display: block; }
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        .glass {
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(12px);
+        }
+
+        .light .glass {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+        }
+    </style>
+</head>
+
+<body class="bg-darkblue-950 text-slate-100 min-h-screen flex flex-col transition-colors duration-300 overflow-hidden">
+
+    <!-- ================= LOGIN SCREEN ================= -->
+    <div id="login-screen" class="fixed inset-0 z-[60] overflow-y-auto bg-darkblue-950">
+        <div class="absolute -top-24 -left-24 w-96 h-96 bg-brand-500/10 rounded-full blur-3xl pointer-events-none"></div>
+        <div class="absolute -bottom-24 -right-24 w-96 h-96 bg-amber-500/10 rounded-full blur-3xl pointer-events-none"></div>
+
+        <div class="relative min-h-full flex items-center justify-center p-4">
+            <div class="w-full max-w-md">
+                <!-- Brand -->
+                <div class="flex items-center justify-center space-x-3 mb-6">
+                    <div class="bg-gradient-to-tr from-brand-600 to-amber-500 p-3 rounded-2xl shadow-lg shadow-brand-600/30">
+                        <i class="fa-solid fa-gauge-high text-white text-xl"></i>
+                    </div>
+                    <div>
+                        <div class="text-2xl font-bold tracking-tight bg-gradient-to-r from-white via-slate-200 to-brand-500 bg-clip-text text-transparent">RideCheck</div>
+                        <div class="text-[11px] uppercase tracking-wider text-brand-500 font-semibold -mt-0.5">Bengkel Pro</div>
+                    </div>
+                </div>
+
+                <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-2xl">
+                    <h2 class="text-lg font-bold text-white">Masuk ke akun Anda</h2>
+                    <p class="text-xs text-slate-400 mt-1">Pilih jenis akun, lalu masukkan username dan password.</p>
+
+                    <!-- Role tabs -->
+                    <div class="grid grid-cols-2 gap-1 bg-slate-950 p-1 rounded-xl border border-slate-800 mt-5">
+                        <button type="button" id="login-tab-customer" onclick="setLoginRole('customer')"
+                            class="py-2.5 text-xs font-semibold rounded-lg transition-all flex items-center justify-center space-x-2 bg-brand-600 text-white shadow">
+                            <i class="fa-solid fa-car-side"></i><span>Pemilik Kendaraan</span>
+                        </button>
+                        <button type="button" id="login-tab-montir" onclick="setLoginRole('montir')"
+                            class="py-2.5 text-xs font-semibold rounded-lg transition-all flex items-center justify-center space-x-2 text-slate-400 hover:text-white">
+                            <i class="fa-solid fa-wrench"></i><span>Montir</span>
+                        </button>
+                    </div>
+
+                    <form id="login-form" onsubmit="handleLogin(event)" class="mt-5 space-y-4" autocomplete="off">
+                        <div>
+                            <label for="l-user" class="block text-xs font-medium text-slate-300 mb-1">Username</label>
+                            <div class="relative">
+                                <i class="fa-solid fa-user absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></i>
+                                <input type="text" id="l-user" required autocapitalize="none" spellcheck="false"
+                                    class="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-4 py-2.5 text-sm text-white focus:outline-none focus:border-brand-500"
+                                    placeholder="Masukkan username">
+                            </div>
+                        </div>
+                        <div>
+                            <label for="l-pass" class="block text-xs font-medium text-slate-300 mb-1">Password</label>
+                            <div class="relative">
+                                <i class="fa-solid fa-lock absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></i>
+                                <input type="password" id="l-pass" required
+                                    class="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-11 py-2.5 text-sm text-white focus:outline-none focus:border-brand-500"
+                                    placeholder="Masukkan password">
+                                <button type="button" onclick="togglePassword()" title="Tampilkan/sembunyikan password"
+                                    class="absolute right-1.5 top-1/2 -translate-y-1/2 w-8 h-8 rounded-lg text-slate-400 hover:text-white flex items-center justify-center">
+                                    <i id="l-pass-icon" class="fa-solid fa-eye text-xs"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div id="login-error" class="hidden text-xs text-red-400 bg-red-500/10 border border-red-500/30 rounded-xl px-3 py-2.5 flex items-start space-x-2">
+                            <i class="fa-solid fa-circle-exclamation mt-0.5"></i>
+                            <span id="login-error-text"></span>
+                        </div>
+
+                        <button type="submit" id="login-submit-btn"
+                            class="w-full bg-gradient-to-r from-brand-600 to-orange-600 hover:from-brand-500 hover:to-orange-500 text-white font-bold py-3 px-4 rounded-xl shadow-lg shadow-brand-600/30 text-sm transition flex items-center justify-center space-x-2">
+                            <i class="fa-solid fa-right-to-bracket"></i>
+                            <span id="login-submit-label">Masuk sebagai Pemilik Kendaraan</span>
+                        </button>
+                    </form>
+
+                    <!-- Demo credentials -->
+                    <div class="mt-5 p-3.5 bg-slate-950/60 border border-slate-800 rounded-xl flex items-center justify-between gap-3">
+                        <div class="min-w-0">
+                            <div class="text-[10px] uppercase tracking-wider text-slate-500 font-semibold">Akun Demo</div>
+                            <div class="text-xs text-slate-300 mt-0.5 truncate">
+                                <span id="demo-user" class="font-semibold text-white">kelompok2mbois</span>
+                            </div>
+                        </div>
+                        <button type="button" onclick="fillDemoCredentials()"
+                            class="text-[11px] font-semibold text-brand-400 hover:text-brand-500 bg-brand-500/10 hover:bg-brand-500/20 px-3 py-1.5 rounded-lg transition shrink-0">Isi otomatis</button>
+                    </div>
+                </div>
+
+                <p class="text-center text-[11px] text-slate-600 mt-4">Montir hanya dapat masuk lewat tab Montir dan akan diarahkan ke Dashboard Bengkel.</p>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Top Navbar -->
+    <header class="sticky top-0 z-50 border-b border-slate-800 bg-darkblue-900/90 backdrop-blur-md">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div
+                    class="bg-gradient-to-tr from-brand-600 to-amber-500 p-2.5 rounded-xl shadow-lg shadow-brand-600/30">
+                    <i class="fa-solid fa-gauge-high text-white text-lg"></i>
+                </div>
+                <div>
+                    <span
+                        class="text-xl font-bold tracking-tight bg-gradient-to-r from-white via-slate-200 to-brand-500 bg-clip-text text-transparent">RideCheck</span>
+                    <span
+                        class="text-xs uppercase bg-brand-500/20 text-brand-500 font-semibold px-2 py-0.5 rounded-full ml-1 border border-brand-500/30">Bengkel
+                        Pro</span>
+                </div>
+            </div>
+
+            <div class="flex items-center space-x-4">
+                
+
+                <!-- Notifications -->
+                <button id="btn-notif" onclick="openNotificationModal()"
+                    class="relative p-2.5 bg-slate-800/80 hover:bg-slate-700 rounded-xl text-slate-300 transition-colors border border-slate-700/50">
+                    <i class="fa-solid fa-bell text-sm"></i>
+                    <span class="absolute top-1 right-1 w-2 h-2 bg-brand-500 rounded-full animate-pulse"></span>
+                </button>
+
+                <!-- Profile / Quick QR (customer only) -->
+                <button id="btn-myqr" onclick="openMyQrModal()"
+                    class="flex items-center space-x-2 bg-gradient-to-r from-slate-800 to-slate-900 border border-slate-700 px-3 py-1.5 rounded-xl hover:border-brand-500/50 transition">
+                    <div
+                        class="w-7 h-7 rounded-lg bg-brand-500/20 text-brand-400 flex items-center justify-center font-bold text-xs">
+                        <i class="fa-solid fa-qrcode"></i>
+                    </div>
+                    <span class="text-xs font-semibold hidden md:inline text-slate-200">My QR ID</span>
+                </button>
+
+                <!-- Logged-in user + logout -->
+                <div id="header-user" class="hidden items-center space-x-2">
+                    <div class="hidden sm:flex items-center space-x-2 bg-slate-800/80 border border-slate-700/50 px-3 py-1.5 rounded-xl">
+                        <div id="hu-avatar" class="w-7 h-7 rounded-lg bg-brand-500/20 text-brand-400 flex items-center justify-center font-bold text-xs">B</div>
+                        <div class="leading-tight">
+                            <div id="hu-name" class="text-xs font-semibold text-slate-200">-</div>
+                            <div id="hu-role" class="text-[10px] text-slate-400">-</div>
+                        </div>
+                    </div>
+                    <button onclick="openLogoutConfirm()" title="Keluar"
+                        class="p-2.5 bg-slate-800/80 hover:bg-red-500/20 hover:text-red-400 rounded-xl text-slate-300 transition-colors border border-slate-700/50">
+                        <i class="fa-solid fa-right-from-bracket text-sm"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-24">
+
+        
+
+        <!-- ================= CUSTOMER VIEW ================= -->
+        <div id="view-customer" class="hidden space-y-6">
+
+            <!-- Vehicle Header Info & Odometer Banner -->
+            <div
+                class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-darkblue-900 to-slate-900 border border-slate-800/80 p-6 shadow-2xl">
+                <div
+                    class="absolute -right-10 -bottom-10 w-60 h-60 bg-brand-500/10 rounded-full blur-3xl pointer-events-none">
+                </div>
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
+                    <div class="flex items-start space-x-4">
+                        <div
+                            class="w-16 h-16 rounded-2xl bg-gradient-to-br from-brand-500 to-orange-700 flex items-center justify-center text-white text-2xl shadow-lg shadow-brand-600/30">
+                            <i class="fa-solid fa-car-side"></i>
+                        </div>
+                        <div>
+                            <div class="flex items-center space-x-2">
+                                <h1 class="text-xl sm:text-2xl font-bold text-white">Honda Civic Turbo RS</h1>
+                                <span
+                                    class="bg-emerald-500/20 text-emerald-400 text-xs px-2.5 py-0.5 rounded-full font-medium border border-emerald-500/30">Baik
+                                    88%</span>
+                            </div>
+                            <p class="text-sm text-slate-400 mt-0.5">Plat Nomor: <span
+                                    class="text-slate-200 font-semibold">B 1234 RCH</span> • Transmisi AT</p>
+                        </div>
+                    </div>
+
+                    <!-- Odometer & Trip Tracker Card -->
+                    <div
+                        class="flex items-center space-x-4 bg-slate-950/60 border border-slate-800/80 px-5 py-3.5 rounded-2xl">
+                        <div class="text-brand-500 text-2xl">
+                            <i class="fa-solid fa-road"></i>
+                        </div>
+                        <div>
+                            <div class="text-xs text-slate-400 font-medium">Odometer Otomatis</div>
+                            <div class="text-lg font-bold text-white tracking-wide" id="odometer-display">24,850 <span
+                                    class="text-xs text-slate-400 font-normal">KM</span></div>
+                        </div>
+                        <div class="pl-3 border-l border-slate-800">
+                            <div class="text-xs text-slate-400 font-medium">Perjalanan Terakhir</div>
+                            <div class="text-lg font-bold text-white tracking-wide" id="trip-display">32.4 <span
+                                    class="text-xs text-slate-400 font-normal">KM</span></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Navigation Tabs for Customer -->
+            <div class="flex overflow-x-auto space-x-2 border-b border-slate-800 pb-2 scrollbar-none">
+                <button onclick="switchTab('dashboard')" id="tab-dashboard"
+                    class="px-4 py-2 text-sm font-semibold rounded-xl bg-brand-600 text-white transition flex items-center space-x-2 shrink-0 shadow-lg shadow-brand-600/20">
+                    <i class="fa-solid fa-chart-pie"></i>
+                    <span>Dashboard Utama</span>
+                </button>
+                <button onclick="switchTab('workshops')" id="tab-workshops"
+                    class="px-4 py-2 text-sm font-medium rounded-xl bg-slate-900 text-slate-300 hover:bg-slate-800 transition flex items-center space-x-2 shrink-0 border border-slate-800">
+                    <i class="fa-solid fa-store text-brand-500"></i>
+                    <span>Cari Bengkel Mitra</span>
+                </button>
+                <button onclick="switchTab('history')" id="tab-history"
+                    class="px-4 py-2 text-sm font-medium rounded-xl bg-slate-900 text-slate-300 hover:bg-slate-800 transition flex items-center space-x-2 shrink-0 border border-slate-800">
+                    <i class="fa-solid fa-clock-rotate-left text-brand-500"></i>
+                    <span>Riwayat & QR Servis</span>
+                </button>
+            </div>
+
+            <!-- TAB 1: DASHBOARD UTAMA -->
+            <div id="content-dashboard" class="space-y-6">
+                <!-- AI RideCheck Advisor / Alerts -->
+                <div
+                    class="bg-gradient-to-r from-amber-500/10 via-slate-900 to-slate-900 border border-amber-500/30 rounded-2xl p-4 flex items-start space-x-4">
+                    <div class="bg-amber-500/20 text-amber-400 p-3 rounded-xl shrink-0">
+                        <i class="fa-solid fa-triangle-exclamation text-lg"></i>
+                    </div>
+                    <div class="flex-1">
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-sm font-bold text-amber-300">RideCheck AI Advisory</h3>
+                            <span
+                                class="text-[10px] bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded-full font-medium">Perhatian
+                                Diperlukan</span>
+                        </div>
+                        <p class="text-xs text-slate-300 mt-1">Oli mesin tersisa <strong>150 KM</strong> lagi sebelum
+                            jadwal penggantian berkala. Dianjurkan booking bengkel terdekat untuk menghindari penurunan
+                            performa mesin.</p>
+                        <div class="mt-3 flex space-x-3">
+                            <button onclick="switchTab('workshops')"
+                                class="text-xs bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold px-3 py-1.5 rounded-lg transition shadow">Booking
+                                Bengkel</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Grid Component Summary Cards -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <!-- Oli Mesin -->
+                    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 hover:border-slate-700 transition">
+                        <div class="flex items-center justify-between mb-3">
+                            <div
+                                class="w-10 h-10 rounded-xl bg-orange-500/10 text-orange-400 flex items-center justify-center font-bold">
+                                <i class="fa-solid fa-oil-can"></i>
+                            </div>
+                            <span
+                                class="text-xs font-semibold px-2.5 py-1 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20">Segera
+                                Ganti</span>
+                        </div>
+                        <h4 class="text-sm font-medium text-slate-400">Oli Mesin</h4>
+                        <div class="text-xl font-bold text-white mt-1">9,850 <span
+                                class="text-xs font-normal text-slate-400">/ 10,000 KM</span></div>
+                        <div class="w-full bg-slate-800 h-2 rounded-full mt-4 overflow-hidden">
+                            <div class="bg-amber-500 h-full rounded-full" style="width: 98%;"></div>
+                        </div>
+                    </div>
+
+                    <!-- Ban Kendaraan -->
+                    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 hover:border-slate-700 transition">
+                        <div class="flex items-center justify-between mb-3">
+                            <div
+                                class="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-400 flex items-center justify-center font-bold">
+                                <i class="fa-solid fa-circle-notch"></i>
+                            </div>
+                            <span
+                                class="text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Kondisi
+                                Baik</span>
+                        </div>
+                        <h4 class="text-sm font-medium text-slate-400">Kesehatan Ban</h4>
+                        <div class="text-xl font-bold text-white mt-1">75% <span
+                                class="text-xs font-normal text-slate-400">Tersisa</span></div>
+                        <div class="w-full bg-slate-800 h-2 rounded-full mt-4 overflow-hidden">
+                            <div class="bg-emerald-500 h-full rounded-full" style="width: 75%;"></div>
+                        </div>
+                    </div>
+
+                    <!-- Sistem Rem -->
+                    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 hover:border-slate-700 transition">
+                        <div class="flex items-center justify-between mb-3">
+                            <div
+                                class="w-10 h-10 rounded-xl bg-purple-500/10 text-purple-400 flex items-center justify-center font-bold">
+                                <i class="fa-solid fa-car-burst"></i>
+                            </div>
+                            <span
+                                class="text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Optimal</span>
+                        </div>
+                        <h4 class="text-sm font-medium text-slate-400">Kampas Rem </h4>
+                        <div class="text-xl font-bold text-white mt-1">60% <span
+                                class="text-xs font-normal text-slate-400">Tersisa</span></div>
+                        <div class="w-full bg-slate-800 h-2 rounded-full mt-4 overflow-hidden">
+                            <div class="bg-purple-500 h-full rounded-full" style="width: 60%;"></div>
+                        </div>
+                    </div>
+
+                    <!-- Aki / Battery -->
+                    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 hover:border-slate-700 transition">
+                        <div class="flex items-center justify-between mb-3">
+                            <div
+                                class="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center font-bold">
+                                <i class="fa-solid fa-car-battery"></i>
+                            </div>
+                            <span
+                                class="text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Sehat
+                                (12.6V)</span>
+                        </div>
+                        <h4 class="text-sm font-medium text-slate-400">Aki Kendaraan</h4>
+                        <div class="text-xl font-bold text-white mt-1">88% <span
+                                class="text-xs font-normal text-slate-400">Kapasitas</span></div>
+                        <div class="w-full bg-slate-800 h-2 rounded-full mt-4 overflow-hidden">
+                            <div class="bg-emerald-500 h-full rounded-full" style="width: 88%;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Trip Companion Activity -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-2xl p-6">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-base font-bold text-white flex items-center space-x-2">
+                                <i class="fa-solid fa-route text-brand-500"></i>
+                                <span>Aktivitas Perjalanan Terakhir</span>
+                            </h3>
+                            <span class="text-xs text-slate-400">Minggu Ini</span>
+                        </div>
+                        <div class="space-y-3">
+                            <div
+                                class="flex items-center justify-between p-3.5 bg-slate-950/50 rounded-xl border border-slate-800/80">
+                                <div class="flex items-center space-x-3">
+                                    <div
+                                        class="w-9 h-9 rounded-lg bg-blue-500/10 text-blue-400 flex items-center justify-center">
+                                        <i class="fa-solid fa-location-arrow"></i>
+                                    </div>
+                                    <div>
+                                        <div class="text-sm font-semibold text-white">Jakarta Selatan → BSD Serpong
+                                        </div>
+                                        <div class="text-xs text-slate-400">Kemarin, 18:30 WIB • Konsumsi BBM Efisien
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="text-right">
+                                    <div class="text-sm font-bold text-slate-200">32.4 KM</div>
+                                    <div class="text-xs text-emerald-400">+32.4 KM ke Odometer</div>
+                                </div>
+                            </div>
+                            <div
+                                class="flex items-center justify-between p-3.5 bg-slate-950/50 rounded-xl border border-slate-800/80">
+                                <div class="flex items-center space-x-3">
+                                    <div
+                                        class="w-9 h-9 rounded-lg bg-purple-500/10 text-purple-400 flex items-center justify-center">
+                                        <i class="fa-solid fa-location-arrow"></i>
+                                    </div>
+                                    <div>
+                                        <div class="text-sm font-semibold text-white">Kantor SCBD → Pondok Indah</div>
+                                        <div class="text-xs text-slate-400">2 hari lalu, 09:15 WIB</div>
+                                    </div>
+                                </div>
+                                <div class="text-right">
+                                    <div class="text-sm font-bold text-slate-200">14.1 KM</div>
+                                    <div class="text-xs text-emerald-400">+14.1 KM ke Odometer</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quick Connected Services -->
+                    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 flex flex-col justify-between">
+                        <div>
+                            <h3 class="text-base font-bold text-white mb-2">RideCheck Guarantee</h3>
+                            <p class="text-xs text-slate-400 leading-relaxed">Semua catatan servis di bengkel mitra
+                                otomatis terverifikasi dan memperpanjang masa garansi komponen kendaraan Anda.</p>
+
+                            <div class="mt-4 space-y-2.5">
+                                <div class="flex items-center space-x-2 text-xs text-slate-300">
+                                    <i class="fa-solid fa-check text-emerald-400"></i>
+                                    <span>Otomatis Sinkronisasi QR</span>
+                                </div>
+                                <div class="flex items-center space-x-2 text-xs text-slate-300">
+                                    <i class="fa-solid fa-check text-emerald-400"></i>
+                                    <span>Riwayat Servis Tersimpan</span>
+                                </div>
+                                <div class="flex items-center space-x-2 text-xs text-slate-300">
+                                    <i class="fa-solid fa-check text-emerald-400"></i>
+                                    <span>Diskon Khusus Bengkel Mitra</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-6">
+                            <button onclick="switchTab('workshops')"
+                                class="w-full bg-gradient-to-r from-brand-600 to-orange-600 hover:from-brand-500 hover:to-orange-500 text-white font-bold py-2.5 px-4 rounded-xl shadow-lg shadow-brand-600/30 text-xs transition">
+                                Temukan Bengkel Mitra
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 2: KESEHATAN KOMPONEN -->
+            <div id="content-health" class="hidden space-y-6">
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                        <div>
+                            <h3 class="text-lg font-bold text-white">Analisis Kesehatan Komponen Kendaraan</h3>
+                            <p class="text-xs text-slate-400">Dipantau real-time berdasarkan jarak tempuh (odometer) &
+                                algoritma beban mesin.</p>
+                        </div>
+                        <div class="flex space-x-2">
+                            <span
+                                class="px-3 py-1 bg-brand-500/10 border border-brand-500/30 text-brand-400 rounded-xl text-xs font-semibold">Live
+                                Telemetry</span>
+                        </div>
+                    </div>
+
+                    <div class="space-y-4">
+                        <!-- Item 1 -->
+                        <div
+                            class="p-4 bg-slate-950/60 rounded-2xl border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                            <div class="flex items-center space-x-4">
+                                <div
+                                    class="w-12 h-12 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center text-xl shrink-0">
+                                    <i class="fa-solid fa-oil-can"></i>
+                                </div>
+                                <div>
+                                    <h4 class="text-sm font-bold text-white">Oli Mesin Mobil (Fully Synthetic 5W-30)
+                                    </h4>
+                                    <p class="text-xs text-slate-400 mt-0.5">Sisa pemakaian: <span
+                                            class="text-amber-400 font-semibold">150 KM</span> lagi (Jadwal: 10,000 KM)
+                                    </p>
+                                </div>
+                            </div>
+                            <div class="flex items-center justify-between sm:justify-end space-x-4">
+                                <span
+                                    class="px-3 py-1 rounded-full text-xs font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30">Segera
+                                    Servis</span>
+                                <button onclick="switchTab('workshops')"
+                                    class="px-4 py-2 bg-brand-600 hover:bg-brand-500 text-white rounded-xl text-xs font-semibold transition shadow">Ganti
+                                    Sekarang</button>
+                            </div>
+                        </div>
+
+                        <!-- Item 2 -->
+                        <div
+                            class="p-4 bg-slate-950/60 rounded-2xl border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                            <div class="flex items-center space-x-4">
+                                <div
+                                    class="w-12 h-12 rounded-xl bg-blue-500/10 text-blue-400 flex items-center justify-center text-xl shrink-0">
+                                    <i class="fa-solid fa-circle-notch"></i>
+                                </div>
+                                <div>
+                                    <h4 class="text-sm font-bold text-white">Ban Depan & Belakang (Bridgestone Turanza)
+                                    </h4>
+                                    <p class="text-xs text-slate-400 mt-0.5">Ketebalan kembang ban: <span
+                                            class="text-emerald-400 font-semibold">75% (Layak pakai sisa 22,000
+                                            KM)</span></p>
+                                </div>
+                            </div>
+                            <div class="flex items-center justify-between sm:justify-end space-x-4">
+                                <span
+                                    class="px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">Kondisi
+                                    Prima</span>
+                                <button onclick="switchTab('workshops')"
+                                    class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-semibold transition border border-slate-700">Cek
+                                    Spooring</button>
+                            </div>
+                        </div>
+
+                        <!-- Item 3 -->
+                        <div
+                            class="p-4 bg-slate-950/60 rounded-2xl border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                            <div class="flex items-center space-x-4">
+                                <div
+                                    class="w-12 h-12 rounded-xl bg-purple-500/10 text-purple-400 flex items-center justify-center text-xl shrink-0">
+                                    <i class="fa-solid fa-car-burst"></i>
+                                </div>
+                                <div>
+                                    <h4 class="text-sm font-bold text-white">Kampas Rem (Brake Pad Set)</h4>
+                                    <p class="text-xs text-slate-400 mt-0.5">Ketebalan kampas: <span
+                                            class="text-emerald-400 font-semibold">60% tersisa</span></p>
+                                </div>
+                            </div>
+                            <div class="flex items-center justify-between sm:justify-end space-x-4">
+                                <span
+                                    class="px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">Kondisi
+                                    Baik</span>
+                                <button onclick="switchTab('workshops')"
+                                    class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-semibold transition border border-slate-700">Inspeksi</button>
+                            </div>
+                        </div>
+
+                        <!-- Item 4 -->
+                        <div
+                            class="p-4 bg-slate-950/60 rounded-2xl border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                            <div class="flex items-center space-x-4">
+                                <div
+                                    class="w-12 h-12 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-xl shrink-0">
+                                    <i class="fa-solid fa-car-battery"></i>
+                                </div>
+                                <div>
+                                    <h4 class="text-sm font-bold text-white">Aki Mobil Kering (Maintenance Free 12V)
+                                    </h4>
+                                    <p class="text-xs text-slate-400 mt-0.5">Voltase & CCA: <span
+                                            class="text-emerald-400 font-semibold">12.6V (Normal - Usia pakai 14
+                                            bulan)</span></p>
+                                </div>
+                            </div>
+                            <div class="flex items-center justify-between sm:justify-end space-x-4">
+                                <span
+                                    class="px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">Sehat</span>
+                                <button onclick="switchTab('workshops')"
+                                    class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-semibold transition border border-slate-700">Test
+                                    Aki</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 3: CARI BENGKEL MITRA -->
+            <div id="content-workshops" class="hidden space-y-6">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                        <h3 class="text-lg font-bold text-white">Bengkel Mitra Terdekat (RideCheck Verified)</h3>
+                        <p class="text-xs text-slate-400">Mitra resmi dengan sistem QR Sync otomatis untuk pembaruan
+                            riwayat servis.</p>
+                    </div>
+                    <div class="relative w-full sm:w-72">
+                        <span
+                            class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-500">
+                            <i class="fa-solid fa-magnifying-glass text-xs"></i>
+                        </span>
+                        <input type="text" placeholder="Cari nama bengkel / area..."
+                            class="w-full bg-slate-900 border border-slate-800 rounded-xl pl-9 pr-4 py-2 text-xs text-white focus:outline-none focus:border-brand-500 transition">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <!-- Bengkel 1 -->
+                    <div
+                        class="bg-slate-900 border border-slate-800 rounded-2xl p-5 flex flex-col justify-between hover:border-brand-500/50 transition">
+                        <div>
+                            <div class="flex items-start justify-between">
+                                <div class="flex items-center space-x-3">
+                                    <div
+                                        class="w-12 h-12 rounded-xl bg-brand-500/20 text-brand-400 flex items-center justify-center font-bold text-lg">
+                                        <i class="fa-solid fa-wrench"></i>
+                                    </div>
+                                    <div>
+                                        <h4 class="text-sm font-bold text-white">AutoMax Service Center</h4>
+                                        <p class="text-xs text-slate-400">Jl. TB Simatupang No. 45</p>
+                                    </div>
+                                </div>
+                                <span
+                                    class="bg-brand-500/10 text-brand-400 text-[10px] px-2 py-0.5 rounded-md font-semibold border border-brand-500/20">Mitra
+                                    Resmi</span>
+                            </div>
+
+                            <div class="mt-4 flex items-center space-x-4 text-xs text-slate-300">
+                                <div class="flex items-center space-x-1 text-amber-400">
+                                    <i class="fa-solid fa-star"></i>
+                                    <span class="font-bold text-white">4.9</span>
+                                    <span class="text-slate-400">(128 ulasan)</span>
+                                </div>
+                                <div>•</div>
+                                <div class="text-slate-400">1.8 KM dari lokasi Anda</div>
+                            </div>
+
+                            <div class="mt-4 pt-3 border-t border-slate-800 flex flex-wrap gap-1.5">
+                                <span class="bg-slate-800 text-slate-300 text-[10px] px-2 py-1 rounded-md">Ganti
+                                    Oli</span>
+                                <span class="bg-slate-800 text-slate-300 text-[10px] px-2 py-1 rounded-md">Tune
+                                    Up</span>
+                                <span class="bg-slate-800 text-slate-300 text-[10px] px-2 py-1 rounded-md">QR Sync
+                                    Ready</span>
+                            </div>
+                        </div>
+
+                        <div class="mt-6 flex space-x-2">
+                            <button onclick="bookWorkshop('AutoMax Service Center')"
+                                class="flex-1 bg-brand-600 hover:bg-brand-500 text-white font-semibold py-2 px-3 rounded-xl text-xs transition shadow">Booking
+                                Servis</button>
+                            <button onclick="callWorkshop('AutoMax Service Center')"
+                                class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs transition border border-slate-700"><i
+                                    class="fa-solid fa-phone"></i></button>
+                        </div>
+                    </div>
+
+                    <!-- Bengkel 2 -->
+                    <div
+                        class="bg-slate-900 border border-slate-800 rounded-2xl p-5 flex flex-col justify-between hover:border-brand-500/50 transition">
+                        <div>
+                            <div class="flex items-start justify-between">
+                                <div class="flex items-center space-x-3">
+                                    <div
+                                        class="w-12 h-12 rounded-xl bg-blue-500/20 text-blue-400 flex items-center justify-center font-bold text-lg">
+                                        <i class="fa-solid fa-screwdriver-wrench"></i>
+                                    </div>
+                                    <div>
+                                        <h4 class="text-sm font-bold text-white">ProSpeed Garage & Tuning</h4>
+                                        <p class="text-xs text-slate-400">Jl. Pangeran Antasari No. 12</p>
+                                    </div>
+                                </div>
+                                <span
+                                    class="bg-brand-500/10 text-brand-400 text-[10px] px-2 py-0.5 rounded-md font-semibold border border-brand-500/20">Mitra
+                                    Resmi</span>
+                            </div>
+
+                            <div class="mt-4 flex items-center space-x-4 text-xs text-slate-300">
+                                <div class="flex items-center space-x-1 text-amber-400">
+                                    <i class="fa-solid fa-star"></i>
+                                    <span class="font-bold text-white">4.8</span>
+                                    <span class="text-slate-400">(94 ulasan)</span>
+                                </div>
+                                <div>•</div>
+                                <div class="text-slate-400">3.2 KM dari lokasi Anda</div>
+                            </div>
+
+                            <div class="mt-4 pt-3 border-t border-slate-800 flex flex-wrap gap-1.5">
+                                <span
+                                    class="bg-slate-800 text-slate-300 text-[10px] px-2 py-1 rounded-md">Kaki-kaki</span>
+                                <span class="bg-slate-800 text-slate-300 text-[10px] px-2 py-1 rounded-md">Rem &
+                                    Kampas</span>
+                                <span class="bg-slate-800 text-slate-300 text-[10px] px-2 py-1 rounded-md">QR Sync
+                                    Ready</span>
+                            </div>
+                        </div>
+
+                        <div class="mt-6 flex space-x-2">
+                            <button onclick="bookWorkshop('ProSpeed Garage & Tuning')"
+                                class="flex-1 bg-brand-600 hover:bg-brand-500 text-white font-semibold py-2 px-3 rounded-xl text-xs transition shadow">Booking
+                                Servis</button>
+                            <button onclick="callWorkshop('ProSpeed Garage & Tuning')"
+                                class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs transition border border-slate-700"><i
+                                    class="fa-solid fa-phone"></i></button>
+                        </div>
+                    </div>
+
+                    <!-- Bengkel 3 -->
+                    <div
+                        class="bg-slate-900 border border-slate-800 rounded-2xl p-5 flex flex-col justify-between hover:border-brand-500/50 transition">
+                        <div>
+                            <div class="flex items-start justify-between">
+                                <div class="flex items-center space-x-3">
+                                    <div
+                                        class="w-12 h-12 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-lg">
+                                        <i class="fa-solid fa-car"></i>
+                                    </div>
+                                    <div>
+                                        <h4 class="text-sm font-bold text-white">Metro Battery & Oil Express</h4>
+                                        <p class="text-xs text-slate-400">Jl. Fatmawati Raya No. 88</p>
+                                    </div>
+                                </div>
+                                <span
+                                    class="bg-brand-500/10 text-brand-400 text-[10px] px-2 py-0.5 rounded-md font-semibold border border-brand-500/20">Mitra
+                                    Resmi</span>
+                            </div>
+
+                            <div class="mt-4 flex items-center space-x-4 text-xs text-slate-300">
+                                <div class="flex items-center space-x-1 text-amber-400">
+                                    <i class="fa-solid fa-star"></i>
+                                    <span class="font-bold text-white">4.7</span>
+                                    <span class="text-slate-400">(210 ulasan)</span>
+                                </div>
+                                <div>•</div>
+                                <div class="text-slate-400">4.5 KM dari lokasi Anda</div>
+                            </div>
+
+                            <div class="mt-4 pt-3 border-t border-slate-800 flex flex-wrap gap-1.5">
+                                <span class="bg-slate-800 text-slate-300 text-[10px] px-2 py-1 rounded-md">Spesialis
+                                    Aki</span>
+                                <span class="bg-slate-800 text-slate-300 text-[10px] px-2 py-1 rounded-md">Ganti Oli
+                                    Cepat</span>
+                                <span class="bg-slate-800 text-slate-300 text-[10px] px-2 py-1 rounded-md">QR Sync
+                                    Ready</span>
+                            </div>
+                        </div>
+
+                        <div class="mt-6 flex space-x-2">
+                            <button onclick="bookWorkshop('Metro Battery & Oil Express')"
+                                class="flex-1 bg-brand-600 hover:bg-brand-500 text-white font-semibold py-2 px-3 rounded-xl text-xs transition shadow">Booking
+                                Servis</button>
+                            <button onclick="callWorkshop('Metro Battery & Oil Express')"
+                                class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs transition border border-slate-700"><i
+                                    class="fa-solid fa-phone"></i></button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 4: RIWAYAT & QR SERVIS -->
+            <div id="content-history" class="hidden space-y-6">
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                        <div>
+                            <h3 class="text-lg font-bold text-white">Riwayat Servis & Catatan Bengkel</h3>
+                            <p class="text-xs text-slate-400">Histori terverifikasi otomatis dari QR Code saat Anda
+                                melakukan servis di mitra RideCheck.</p>
+                        </div>
+                        <button onclick="openMyQrModal()"
+                            class="bg-brand-600 hover:bg-brand-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition shadow flex items-center space-x-2">
+                            <i class="fa-solid fa-qrcode"></i>
+                            <span>Tampilkan QR Code Saya</span>
+                        </button>
+                    </div>
+
+                    <div class="space-y-4">
+                        <!-- History Item 1 -->
+                        <div
+                            class="p-4 bg-slate-950/60 rounded-2xl border border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                            <div class="flex items-start space-x-4">
+                                <div
+                                    class="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center font-bold shrink-0 mt-1">
+                                    <i class="fa-solid fa-receipt"></i>
+                                </div>
+                                <div>
+                                    <div class="flex items-center space-x-2">
+                                        <h4 class="text-sm font-bold text-white">Penggantian Filter Udara & Tune-Up</h4>
+                                        <span
+                                            class="text-[10px] bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded-full font-semibold">Terverifikasi
+                                            QR</span>
+                                    </div>
+                                    <p class="text-xs text-slate-400 mt-1">AutoMax Service Center • Oleh Mekanik: Bpk.
+                                        Joko</p>
+                                    <p
+                                        class="text-xs text-slate-300 mt-2 bg-slate-900 p-2.5 rounded-xl border border-slate-800">
+                                        Catatan: Penggantian filter udara racing, pembersihan throttle body, cek busi
+                                        normal.</p>
+                                </div>
+                            </div>
+                            <div class="text-right shrink-0">
+                                <div class="text-xs text-slate-400">14 Januari 2026</div>
+                                <div class="text-sm font-bold text-white mt-1">Rp 350.000</div>
+                                <div class="text-xs text-amber-400 mt-1">
+                                    <i class="fa-solid fa-star"></i> 5.0 (Ulasan Anda)
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- History Item 2 -->
+                        <div
+                            class="p-4 bg-slate-950/60 rounded-2xl border border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                            <div class="flex items-start space-x-4">
+                                <div
+                                    class="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-400 flex items-center justify-center font-bold shrink-0 mt-1">
+                                    <i class="fa-solid fa-receipt"></i>
+                                </div>
+                                <div>
+                                    <div class="flex items-center space-x-2">
+                                        <h4 class="text-sm font-bold text-white">Servis Berkala 10,000 KM & Ganti Oli
+                                        </h4>
+                                        <span
+                                            class="text-[10px] bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded-full font-semibold">Terverifikasi
+                                            QR</span>
+                                    </div>
+                                    <p class="text-xs text-slate-400 mt-1">ProSpeed Garage & Tuning • Oleh Mekanik: Bpk.
+                                        Rudi</p>
+                                    <p
+                                        class="text-xs text-slate-300 mt-2 bg-slate-900 p-2.5 rounded-xl border border-slate-800">
+                                        Catatan: Oli mesin diganti dengan jenis Fully Synthetic 5W-30. Kampas rem masih
+                                        tebal 65%.</p>
+                                </div>
+                            </div>
+                            <div class="text-right shrink-0">
+                                <div class="text-xs text-slate-400">10 November 2025</div>
+                                <div class="text-sm font-bold text-white mt-1">Rp 850.000</div>
+                                <div class="text-xs text-amber-400 mt-1">
+                                    <i class="fa-solid fa-star"></i> 4.8 (Ulasan Anda)
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+
+        <!-- ================= WORKSHOP PARTNER VIEW (DASHBOARD KASIR) ================= -->
+        <div id="view-workshop" class="hidden space-y-6">
+
+            <!-- Workshop Header Banner -->
+            <div
+                class="bg-gradient-to-r from-orange-950/60 via-slate-900 to-slate-900 border border-brand-500/30 rounded-3xl p-6 shadow-2xl">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div class="flex items-center space-x-4">
+                        <div
+                            class="w-14 h-14 rounded-2xl bg-brand-600 text-white flex items-center justify-center text-2xl shadow-lg shadow-brand-600/30">
+                            <i class="fa-solid fa-cash-register"></i>
+                        </div>
+                        <div>
+                            <div class="flex items-center space-x-2">
+                                <h1 class="text-xl font-bold text-white">AutoMax Service Center
+                                </h1>
+                                <span
+                                    class="bg-brand-500 text-slate-950 font-bold text-[10px] px-2 py-0.5 rounded-full">Partner
+                                    Aktif</span>
+                            </div>
+                            <p class="text-xs text-slate-400 mt-0.5">Scan QR kendaraan pelanggan untuk update otomatis
+                                kilometer & kesehatan komponen.</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-3">
+                        <button onclick="openScanModal()"
+                            class="bg-brand-600 hover:bg-brand-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition shadow flex items-center space-x-2">
+                            <i class="fa-solid fa-camera"></i>
+                            <span>Scan QR Pelanggan</span>
+                        </button>
+                        <button onclick="simulateScanCustomerQR()"
+                            class="bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold px-4 py-2.5 rounded-xl transition border border-slate-700 flex items-center space-x-2">
+                            <i class="fa-solid fa-flask"></i>
+                            <span>Demo</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Interactive Workshop POS / Service Logger -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Left: Input Form -->
+                <div class="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-2xl p-6">
+                    <h3 class="text-base font-bold text-white mb-4 flex items-center space-x-2">
+                        <i class="fa-solid fa-file-invoice-dollar text-brand-500"></i>
+                        <span>Input Servis & Update Otomatis Aplikasi Pengguna</span>
+                    </h3>
+
+                    <div id="scan-result" class="hidden mb-4 p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-between gap-3">
+                        <div class="flex items-center space-x-3 min-w-0">
+                            <div class="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
+                                <i class="fa-solid fa-qrcode text-xs"></i>
+                            </div>
+                            <div class="min-w-0">
+                                <div class="text-xs font-bold text-emerald-300">Kendaraan terbaca dari QR</div>
+                                <div id="scan-result-text" class="text-[11px] text-slate-300 truncate"></div>
+                            </div>
+                        </div>
+                        <button type="button" onclick="openScanModal()" class="text-[11px] text-brand-400 hover:text-brand-500 font-semibold shrink-0">Scan ulang</button>
+                    </div>
+
+                    <form id="workshop-form" onsubmit="submitWorkshopService(event)" class="space-y-4">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-medium text-slate-300 mb-1">Nomor Plat Kendaraan /
+                                    ID</label>
+                                <div class="relative">
+                                    <input type="text" id="w-plate" value="B 1234 RCH"
+                                        class="w-full bg-slate-950 border border-slate-800 rounded-xl pl-4 pr-11 py-2.5 text-xs text-white focus:outline-none focus:border-brand-500 font-semibold"
+                                        required>
+                                    <button type="button" onclick="openScanModal()" title="Scan QR"
+                                        class="absolute right-1.5 top-1/2 -translate-y-1/2 w-8 h-8 rounded-lg bg-brand-500/15 hover:bg-brand-500/30 text-brand-400 flex items-center justify-center transition">
+                                        <i class="fa-solid fa-qrcode text-xs"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-slate-300 mb-1">Nama Pemilik</label>
+                                <input type="text" id="w-owner" value="Kelompok 2"
+                                    class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-brand-500"
+                                    required>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-medium text-slate-300 mb-1">Jenis Pekerjaan /
+                                    Servis</label>
+                                <select id="w-service-type"
+                                    class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-brand-500">
+                                    <option>Ganti Oli Mesin & Filter</option>
+                                    <option>Penggantian Kampas Rem Set</option>
+                                    <option>Tune Up & Pembersihan Injektor</option>
+                                    <option>Pengecekan Aki & Kelistrikan</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-slate-300 mb-1">Update KM Odometer Saat
+                                    Ini</label>
+                                <input type="number" id="w-km" value="10000"
+                                    class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-brand-500"
+                                    required>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-medium text-slate-300 mb-1">Catatan Mekanik untuk
+                                Pengguna</label>
+                            <textarea id="w-notes" rows="3"
+                                class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-brand-500"
+                                placeholder="Contoh: Oli lama sudah pekat, filter diganti baru. Kondisi mesin secara keseluruhan sangat baik.">Oli mesin diganti dengan jenis Fully Synthetic. Reset interval servis ke 10.000 KM berikutnya.</textarea>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-medium text-slate-300 mb-1">Nama Mekanik</label>
+                                <input type="text" id="w-mechanic" value="Bpk. Joko"
+                                    class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-brand-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-slate-300 mb-1">Total Biaya (Rp)</label>
+                                <input type="text" id="w-cost" value="450.000"
+                                    class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-brand-500">
+                            </div>
+                        </div>
+
+                        <button type="submit"
+                            class="w-full bg-gradient-to-r from-brand-600 to-orange-600 hover:from-brand-500 hover:to-orange-500 text-white font-bold py-3 px-4 rounded-xl shadow-lg shadow-brand-600/30 text-xs transition flex items-center justify-center space-x-2">
+                            <i class="fa-solid fa-cloud-arrow-up"></i>
+                            <span>Simpan & Sinkronisasi Otomatis ke App Pelanggan</span>
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Right: Active Queue & Realtime Feed -->
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 flex flex-col justify-between">
+                    <div>
+                        <h3 class="text-base font-bold text-white mb-4 flex items-center space-x-2">
+                            <i class="fa-solid fa-list-check text-brand-500"></i>
+                            <span>Antrean Servis Hari Ini</span>
+                        </h3>
+
+                        <div class="space-y-3">
+                            <div class="p-3.5 bg-slate-950/60 rounded-xl border border-slate-800">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-xs font-bold text-white">B 1234 RCH</span>
+                                    <span
+                                        class="text-[10px] bg-amber-500/20 text-amber-400 px-2 py-0.5 rounded-full font-semibold">Sedang
+                                        Dikerjakan</span>
+                                </div>
+                                <p class="text-xs text-slate-400 mt-1">Honda Civic • Ganti Oli Mesin</p>
+                                <div class="text-[10px] text-slate-500 mt-2">Mekanik: Bpk. Joko</div>
+                            </div>
+
+                            <div class="p-3.5 bg-slate-950/60 rounded-xl border border-slate-800">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-xs font-bold text-white">D 8899 XYZ</span>
+                                    <span
+                                        class="text-[10px] bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded-full font-semibold">Menunggu
+                                        Antrean</span>
+                                </div>
+                                <p class="text-xs text-slate-400 mt-1">Toyota Avanza • Cek Kampas Rem</p>
+                                <div class="text-[10px] text-slate-500 mt-2">Mekanik: Bpk. Andi</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-6 pt-4 border-t border-slate-800 bg-slate-950/40 p-4 rounded-xl">
+                        <div class="flex items-center space-x-3">
+                            <div
+                                class="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-xs">
+                                <i class="fa-solid fa-wifi"></i>
+                            </div>
+                            <div>
+                                <div class="text-xs font-bold text-white">RideCheck Cloud Sync Active</div>
+                                <div class="text-[10px] text-slate-400">Sinkronisasi instan ke perangkat pengguna.</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Modal: My QR ID -->
+    <div id="modal-qr"
+        class="fixed inset-0 z-50 hidden bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div
+            class="bg-slate-900 border border-slate-800 rounded-3xl p-6 max-w-sm w-full text-center relative shadow-2xl">
+            <button onclick="closeMyQrModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+            <div
+                class="w-12 h-12 rounded-2xl bg-brand-500/20 text-brand-400 flex items-center justify-center mx-auto mb-3 text-xl">
+                <i class="fa-solid fa-qrcode"></i>
+            </div>
+            <h3 class="text-base font-bold text-white">QR ID Kendaraan Anda</h3>
+            <p class="text-xs text-slate-400 mt-1">Tunjukkan QR ini ke kasir bengkel mitra untuk otomatisasi update
+                riwayat servis.</p>
+
+            <div class="bg-white p-4 rounded-2xl my-5 inline-block shadow-lg">
+                <div id="qr-render" class="w-44 h-44 mx-auto"></div>
+            </div>
+
+            <div class="bg-slate-950 p-3 rounded-xl border border-slate-800">
+                <div class="text-xs text-slate-400">Plat Nomor Kendaraan</div>
+                <div class="text-sm font-bold text-white">B 1234 RCH (Honda Civic)</div>
+            </div>
+
+            <button onclick="closeMyQrModal()"
+                class="mt-5 w-full bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold py-2.5 rounded-xl text-xs transition border border-slate-700">Tutup</button>
+        </div>
+    </div>
+
+    <!-- Modal: Scan QR -->
+    <div id="modal-scan"
+        class="fixed inset-0 z-50 hidden bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-3xl p-5 max-w-md w-full relative shadow-2xl">
+            <button onclick="closeScanModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white z-10">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+            <h3 class="text-base font-bold text-white mb-1 flex items-center space-x-2">
+                <i class="fa-solid fa-camera text-brand-500"></i>
+                <span>Scan QR Kendaraan</span>
+            </h3>
+            <p class="text-xs text-slate-400 mb-4">Arahkan kamera ke QR ID di aplikasi pelanggan.</p>
+
+            <div class="relative aspect-square w-full bg-black rounded-2xl overflow-hidden border border-slate-800">
+                <video id="scan-video" class="w-full h-full object-cover" playsinline muted></video>
+                <div id="scan-frame" class="absolute inset-0 pointer-events-none">
+                    <div class="absolute inset-[10%] border-2 border-brand-500/70 rounded-2xl"></div>
+                    <div class="scan-line"></div>
+                </div>
+                <div id="scan-placeholder" class="absolute inset-0 flex flex-col items-center justify-center text-slate-500 text-xs gap-2">
+                    <i class="fa-solid fa-spinner fa-spin text-lg"></i>
+                    <span>Menyalakan kamera...</span>
+                </div>
+            </div>
+            <canvas id="scan-canvas" class="hidden"></canvas>
+
+            <div id="scan-status" class="mt-3 text-xs text-slate-300 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 min-h-[2.5rem] flex items-center">
+                Menunggu QR Code...
+            </div>
+
+            <div class="mt-4 grid grid-cols-2 gap-3">
+                <label class="cursor-pointer bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold py-2.5 rounded-xl text-xs transition border border-slate-700 flex items-center justify-center space-x-2">
+                    <i class="fa-solid fa-image"></i>
+                    <span>Dari Foto</span>
+                    <input type="file" accept="image/*" class="hidden" onchange="scanFromImage(this)">
+                </label>
+                <button onclick="closeScanModal()"
+                    class="bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold py-2.5 rounded-xl text-xs transition border border-slate-700">Batal</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Notifications -->
+    <div id="modal-notif"
+        class="fixed inset-0 z-50 hidden bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 max-w-md w-full relative shadow-2xl">
+            <button onclick="closeNotificationModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+            <h3 class="text-base font-bold text-white mb-4 flex items-center space-x-2">
+                <i class="fa-solid fa-bell text-brand-500"></i>
+                <span>Notifikasi & Peringatan RideCheck</span>
+            </h3>
+
+            <div class="space-y-3">
+                <div class="p-3 bg-slate-950/60 rounded-xl border border-slate-800 text-xs">
+                    <div class="font-bold text-amber-400">Jadwal Ganti Oli Mendekati Batas</div>
+                    <div class="text-slate-300 mt-0.5">Oli mesin tersisa 150 KM lagi. Segera booking bengkel mitra
+                        terdekat.</div>
+                    <div class="text-[10px] text-slate-500 mt-1">Hari ini, 08:00 WIB</div>
+                </div>
+                <div class="p-3 bg-slate-950/60 rounded-xl border border-slate-800 text-xs">
+                    <div class="font-bold text-emerald-400">Servis Berhasil Disinkronisasi</div>
+                    <div class="text-slate-300 mt-0.5">Riwayat servis AutoMax Service Center telah masuk ke database
+                        Anda.</div>
+                    <div class="text-[10px] text-slate-500 mt-1">14 Januari 2026</div>
+                </div>
+            </div>
+
+            <button onclick="closeNotificationModal()"
+                class="mt-5 w-full bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold py-2.5 rounded-xl text-xs transition border border-slate-700">Tutup</button>
+        </div>
+    </div>
+
+    <!-- Toast Notification Banner -->
+    <div id="toast"
+        class="fixed bottom-5 right-5 z-50 transform translate-y-20 opacity-0 transition-all duration-300 bg-emerald-600 text-white px-5 py-3 rounded-2xl shadow-xl flex items-center space-x-3 text-xs font-semibold">
+        <i class="fa-solid fa-circle-check text-base"></i>
+        <span id="toast-message">Berhasil memperbarui data!</span>
+    </div>
+
+    <!-- JavaScript Logic -->
+    <script>
+        let currentOdometer = 24850;
+
+        // ===== AUTH (demo) =====
+        // CATATAN: akun & password di bawah hanya untuk demo front-end.
+        // Untuk produksi, verifikasi login WAJIB dilakukan di server (jangan simpan password di JavaScript).
+        const ACCOUNTS = [
+            { role: 'customer', username: 'kelompok2mbois', password: 'kelompok2123', name: 'Kelompok 2', label: 'Pemilik Kendaraan' },
+            { role: 'montir',   username: 'pakderifki', password: 'rifki123', name: 'Bpk. Rifki',    label: 'Montir • AutoMax' }
+        ];
+        const SESSION_KEY = 'rc_session';
+        let currentUser = null;
+        let loginRole = 'customer';
+        let memorySession = null; // cadangan jika sessionStorage diblokir browser
+
+        function saveSession(user) {
+            const val = JSON.stringify({ username: user.username, role: user.role });
+            memorySession = val;
+            try { sessionStorage.setItem(SESSION_KEY, val); } catch (e) { /* diabaikan */ }
+        }
+        function loadSession() {
+            let raw = memorySession;
+            try { raw = sessionStorage.getItem(SESSION_KEY) || raw; } catch (e) { /* diabaikan */ }
+            if (!raw) return null;
+            try {
+                const d = JSON.parse(raw);
+                return ACCOUNTS.find(a => a.username === d.username && a.role === d.role) || null;
+            } catch (e) { return null; }
+        }
+        function clearSession() {
+            memorySession = null;
+            try { sessionStorage.removeItem(SESSION_KEY); } catch (e) { /* diabaikan */ }
+        }
+
+        function setLoginRole(role) {
+            loginRole = role;
+            const base = 'py-2.5 text-xs font-semibold rounded-lg transition-all flex items-center justify-center space-x-2 ';
+            const off = base + 'text-slate-400 hover:text-white';
+            document.getElementById('login-tab-customer').className = role === 'customer' ? base + 'bg-brand-600 text-white shadow' : off;
+            document.getElementById('login-tab-montir').className = role === 'montir' ? base + 'bg-sky-600 text-white shadow' : off;
+            document.getElementById('login-submit-label').textContent =
+                role === 'customer' ? 'Masuk' : 'Masuk';
+            const btn = document.getElementById('login-submit-btn');
+            if (btn) {
+                btn.className = 'w-full text-white font-bold py-3 px-4 rounded-xl shadow-lg text-sm transition flex items-center justify-center space-x-2 ' +
+                    (role === 'customer'
+                        ? 'bg-gradient-to-r from-brand-600 to-orange-600 hover:from-brand-500 hover:to-orange-500 shadow-brand-600/30'
+                        : 'bg-gradient-to-r from-sky-600 to-blue-600 hover:from-sky-500 hover:to-blue-500 shadow-sky-600/30');
+            }
+            const demo = ACCOUNTS.find(a => a.role === role);
+            document.getElementById('demo-user').textContent = demo.username;
+            document.getElementById('login-error').classList.add('hidden');
+        }
+
+        function fillDemoCredentials() {
+            const demo = ACCOUNTS.find(a => a.role === loginRole);
+            document.getElementById('l-user').value = demo.username;
+            document.getElementById('l-pass').value = demo.password;
+            document.getElementById('login-error').classList.add('hidden');
+        }
+
+        function togglePassword() {
+            const input = document.getElementById('l-pass');
+            const icon = document.getElementById('l-pass-icon');
+            const show = input.type === 'password';
+            input.type = show ? 'text' : 'password';
+            icon.className = show ? 'fa-solid fa-eye-slash text-xs' : 'fa-solid fa-eye text-xs';
+        }
+
+        function handleLogin(e) {
+            e.preventDefault();
+            const username = document.getElementById('l-user').value.trim().toLowerCase();
+            const password = document.getElementById('l-pass').value;
+            const account = ACCOUNTS.find(a => a.role === loginRole && a.username === username && a.password === password);
+            const err = document.getElementById('login-error');
+            if (!account) {
+                const roleName = loginRole === 'customer' ? 'Pemilik Kendaraan' : 'Montir';
+                document.getElementById('login-error-text').textContent =
+                    'Username atau password salah untuk akun ' + roleName + '. Pastikan tab yang dipilih sudah sesuai.';
+                err.classList.remove('hidden');
+                return;
+            }
+            err.classList.add('hidden');
+            saveSession(account);
+            applySession(account);
+            showToast('Selamat datang, ' + account.name + '!');
+        }
+
+        // Tampilkan UI sesuai peran. Pelanggan hanya melihat view-customer, montir hanya view-workshop.
+        function applySession(user) {
+            currentUser = user;
+            document.getElementById('login-screen').classList.add('hidden');
+            document.body.classList.remove('overflow-hidden');
+
+            const hu = document.getElementById('header-user');
+            hu.classList.remove('hidden');
+            hu.classList.add('flex');
+            document.getElementById('hu-avatar').textContent = user.name.replace(/^Bpk\.\s*/, '').charAt(0).toUpperCase();
+            document.getElementById('hu-name').textContent = user.name;
+            document.getElementById('hu-role').textContent = user.label;
+
+            const isCustomer = user.role === 'customer';
+            document.getElementById('view-customer').classList.toggle('hidden', !isCustomer);
+            document.getElementById('view-workshop').classList.toggle('hidden', isCustomer);
+            document.getElementById('btn-myqr').classList.toggle('hidden', !isCustomer);
+            document.getElementById('btn-notif').classList.toggle('hidden', !isCustomer);
+
+            if (isCustomer) {
+                switchTab('dashboard');
+            } else {
+                document.getElementById('w-mechanic').value = user.name;
+            }
+            window.scrollTo(0, 0);
+        }
+
+        document.addEventListener('keydown', e => { if (e.key === 'Escape') closeLogoutConfirm(); });
+
+        function openLogoutConfirm() {
+            document.getElementById('logout-modal').classList.remove('hidden');
+        }
+
+        function closeLogoutConfirm() {
+            document.getElementById('logout-modal').classList.add('hidden');
+        }
+
+        function confirmLogout() {
+            closeLogoutConfirm();
+            logout();
+        }
+
+        function logout() {
+            closeScanModal();
+            closeMyQrModal();
+            closeNotificationModal();
+            const lastRole = currentUser ? currentUser.role : 'customer';
+            clearSession();
+            currentUser = null;
+
+            document.getElementById('view-customer').classList.add('hidden');
+            document.getElementById('view-workshop').classList.add('hidden');
+            const hu = document.getElementById('header-user');
+            hu.classList.add('hidden');
+            hu.classList.remove('flex');
+            document.getElementById('scan-result').classList.add('hidden');
+
+            document.getElementById('login-form').reset();
+            document.getElementById('l-pass').type = 'password';
+            document.getElementById('l-pass-icon').className = 'fa-solid fa-eye text-xs';
+            setLoginRole(lastRole);
+            document.getElementById('login-screen').classList.remove('hidden');
+            document.body.classList.add('overflow-hidden');
+            showToast('Anda sudah keluar.');
+        }
+
+        // Customer Tab Switcher
+        function switchTab(tabName) {
+            const tabs = ['dashboard', 'workshops', 'history'];
+            tabs.forEach(t => {
+                const content = document.getElementById(`content-${t}`);
+                const btn = document.getElementById(`tab-${t}`);
+                if (t === tabName) {
+                    content.classList.remove('hidden');
+                    btn.className = "px-4 py-2 text-sm font-semibold rounded-xl bg-brand-600 text-white transition flex items-center space-x-2 shrink-0 shadow-lg shadow-brand-600/20";
+                } else {
+                    content.classList.add('hidden');
+                    btn.className = "px-4 py-2 text-sm font-medium rounded-xl bg-slate-900 text-slate-300 hover:bg-slate-800 transition flex items-center space-x-2 shrink-0 border border-slate-800";
+                }
+            });
+        }
+
+        // Simulate driving (Trip Tracker update)
+        function simulateDrive() {
+            currentOdometer += 50;
+            document.getElementById('odometer-display').innerHTML = currentOdometer.toLocaleString() + ' <span class="text-xs text-slate-400 font-normal">KM</span>';
+            showToast('Trip Companion: +50 KM ditambahkan ke odometer otomatis!');
+        }
+
+        // Workshop Service Submission simulation
+        function submitWorkshopService(e) {
+            e.preventDefault();
+            if (!currentUser || currentUser.role !== 'montir') return;
+            const plate = document.getElementById('w-plate').value;
+            const km = document.getElementById('w-km').value;
+            showToast(`Sukses! Data servis ${plate} (${km} KM) disinkronkan ke RideCheck Cloud.`);
+            document.getElementById('scan-result').classList.add('hidden');
+        }
+
+        // Simulate scanning customer QR from workshop
+        function simulateScanCustomerQR() {
+            document.getElementById('w-plate').value = "B 1234 RCH";
+            document.getElementById('w-owner').value = "Budi Santoso";
+            document.getElementById('w-km').value = (currentOdometer + 150);
+            showScanResult('B 1234 RCH • Honda Civic Turbo RS • (data demo)');
+            showToast("Demo: data kendaraan B 1234 RCH dimuat.");
+        }
+
+        // Modal Controls
+        function openMyQrModal() {
+            document.getElementById('modal-qr').classList.remove('hidden');
+            renderMyQr();
+        }
+
+        // Generate real QR code containing the vehicle payload
+        function buildQrPayload() {
+            return JSON.stringify({
+                app: 'RideCheck',
+                plate: 'B 1234 RCH',
+                owner: 'Budi Santoso',
+                vehicle: 'Honda Civic Turbo RS',
+                km: currentOdometer
+            });
+        }
+        function renderMyQr() {
+            const box = document.getElementById('qr-render');
+            box.innerHTML = '';
+            if (typeof QRCode === 'undefined') {
+                box.innerHTML = '<div class="text-xs text-slate-500 p-4">Library QR gagal dimuat. Periksa koneksi internet.</div>';
+                return;
+            }
+            new QRCode(box, {
+                text: buildQrPayload(),
+                width: 256,
+                height: 256,
+                colorDark: '#0f172a',
+                colorLight: '#ffffff',
+                correctLevel: QRCode.CorrectLevel.M
+            });
+        }
+
+        // ===== QR SCANNER =====
+        let scanStream = null;
+        let scanRaf = null;
+        let scanActive = false;
+
+        function setScanStatus(msg, type) {
+            const el = document.getElementById('scan-status');
+            const colors = { info: 'text-slate-300', ok: 'text-emerald-400', warn: 'text-amber-400', err: 'text-red-400' };
+            el.className = 'mt-3 text-xs bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 min-h-[2.5rem] flex items-center ' + (colors[type] || colors.info);
+            el.textContent = msg;
+        }
+
+        async function openScanModal() {
+            if (!currentUser || currentUser.role !== 'montir') return;
+            document.getElementById('modal-scan').classList.remove('hidden');
+            setScanStatus('Menunggu QR Code...', 'info');
+            await startScan();
+        }
+
+        function closeScanModal() {
+            stopScan();
+            document.getElementById('modal-scan').classList.add('hidden');
+        }
+
+        async function startScan() {
+            const video = document.getElementById('scan-video');
+            const placeholder = document.getElementById('scan-placeholder');
+            const frame = document.getElementById('scan-frame');
+            placeholder.classList.remove('hidden');
+            frame.classList.remove('hidden');
+
+            if (typeof jsQR === 'undefined') {
+                placeholder.innerHTML = '<i class="fa-solid fa-triangle-exclamation text-lg"></i><span>Library scanner gagal dimuat</span>';
+                setScanStatus('Library jsQR tidak termuat. Periksa koneksi internet.', 'err');
+                return;
+            }
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                placeholder.innerHTML = '<i class="fa-solid fa-video-slash text-lg"></i><span>Kamera tidak tersedia</span>';
+                frame.classList.add('hidden');
+                setScanStatus('Kamera butuh HTTPS atau localhost. Gunakan tombol "Dari Foto" sebagai alternatif.', 'warn');
+                return;
+            }
+
+            try {
+                scanStream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: { ideal: 'environment' } },
+                    audio: false
+                });
+                video.srcObject = scanStream;
+                await video.play();
+                placeholder.classList.add('hidden');
+                scanActive = true;
+                scanTick();
+            } catch (err) {
+                const msgs = {
+                    NotAllowedError: 'Izin kamera ditolak. Aktifkan izin kamera di browser, atau gunakan "Dari Foto".',
+                    NotFoundError: 'Kamera tidak ditemukan di perangkat ini. Gunakan "Dari Foto".',
+                    NotReadableError: 'Kamera sedang dipakai aplikasi lain.'
+                };
+                placeholder.innerHTML = '<i class="fa-solid fa-video-slash text-lg"></i><span>Kamera tidak aktif</span>';
+                frame.classList.add('hidden');
+                setScanStatus(msgs[err.name] || ('Gagal membuka kamera: ' + err.message), 'warn');
+            }
+        }
+
+        function stopScan() {
+            scanActive = false;
+            if (scanRaf) cancelAnimationFrame(scanRaf);
+            scanRaf = null;
+            if (scanStream) {
+                scanStream.getTracks().forEach(t => t.stop());
+                scanStream = null;
+            }
+            const video = document.getElementById('scan-video');
+            video.srcObject = null;
+        }
+
+        function scanTick() {
+            if (!scanActive) return;
+            const video = document.getElementById('scan-video');
+            if (video.readyState === video.HAVE_ENOUGH_DATA && video.videoWidth > 0) {
+                const canvas = document.getElementById('scan-canvas');
+                const ctx = canvas.getContext('2d', { willReadFrequently: true });
+                const scale = Math.min(1, 640 / video.videoWidth);
+                canvas.width = Math.round(video.videoWidth * scale);
+                canvas.height = Math.round(video.videoHeight * scale);
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                const img = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                const code = jsQR(img.data, img.width, img.height, { inversionAttempts: 'dontInvert' });
+                if (code && code.data) {
+                    handleScanResult(code.data);
+                    return;
+                }
+            }
+            scanRaf = requestAnimationFrame(scanTick);
+        }
+
+        // Fallback: decode QR from an uploaded photo
+        function scanFromImage(input) {
+            const file = input.files && input.files[0];
+            input.value = '';
+            if (!file) return;
+            if (typeof jsQR === 'undefined') {
+                setScanStatus('Library jsQR tidak termuat. Periksa koneksi internet.', 'err');
+                return;
+            }
+            const url = URL.createObjectURL(file);
+            const img = new Image();
+            img.onload = () => {
+                const canvas = document.getElementById('scan-canvas');
+                const ctx = canvas.getContext('2d', { willReadFrequently: true });
+                const scale = Math.min(1, 1000 / Math.max(img.width, img.height));
+                canvas.width = Math.round(img.width * scale);
+                canvas.height = Math.round(img.height * scale);
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                URL.revokeObjectURL(url);
+                const data = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                const code = jsQR(data.data, data.width, data.height, { inversionAttempts: 'attemptBoth' });
+                if (code && code.data) {
+                    handleScanResult(code.data);
+                } else {
+                    setScanStatus('QR Code tidak terdeteksi di foto. Coba foto yang lebih jelas dan tidak buram.', 'err');
+                }
+            };
+            img.onerror = () => {
+                URL.revokeObjectURL(url);
+                setScanStatus('File gambar tidak bisa dibaca.', 'err');
+            };
+            img.src = url;
+        }
+
+        function handleScanResult(raw) {
+            stopScan();
+            let data = null;
+            try {
+                const parsed = JSON.parse(raw);
+                if (parsed && parsed.app === 'RideCheck' && parsed.plate) data = parsed;
+            } catch (e) { /* not JSON */ }
+
+            if (data) {
+                document.getElementById('w-plate').value = data.plate;
+                if (data.owner) document.getElementById('w-owner').value = data.owner;
+                if (data.km) document.getElementById('w-km').value = data.km;
+                const label = [data.plate, data.vehicle, data.km ? Number(data.km).toLocaleString() + ' KM' : null].filter(Boolean).join(' • ');
+                showScanResult(label);
+                showToast('QR terbaca! Data ' + data.plate + ' berhasil dimuat.');
+                closeScanModal();
+            } else {
+                // Not a RideCheck QR: treat as a plain vehicle ID, but warn the cashier
+                const text = String(raw).trim().slice(0, 40);
+                document.getElementById('w-plate').value = text;
+                showScanResult('QR non-RideCheck: "' + text + '" dimasukkan sebagai ID kendaraan. Mohon cek manual.');
+                showToast('QR terbaca, tapi bukan QR RideCheck. Periksa data secara manual.');
+                closeScanModal();
+            }
+        }
+
+        function showScanResult(text) {
+            document.getElementById('scan-result-text').textContent = text;
+            document.getElementById('scan-result').classList.remove('hidden');
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeScanModal();
+        });
+
+        function closeMyQrModal() {
+            document.getElementById('modal-qr').classList.add('hidden');
+        }
+        function openNotificationModal() {
+            document.getElementById('modal-notif').classList.remove('hidden');
+        }
+        function closeNotificationModal() {
+            document.getElementById('modal-notif').classList.add('hidden');
+        }
+
+        // Action helpers
+        function bookWorkshop(name) {
+            showToast(`Permintaan booking ke ${name} terkirim. Bengkel akan segera menghubungi Anda.`);
+        }
+        function callWorkshop(name) {
+            showToast(`Menghubungkan panggilan ke ${name}...`);
+        }
+
+        // Init: pulihkan sesi jika sudah login di tab ini
+        (function initAuth() {
+            const user = loadSession();
+            if (user) { applySession(user); }
+            else { setLoginRole('customer'); }
+        })();
+
+        // Toast Notification Helper
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toast-message').innerText = message;
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            setTimeout(() => {
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 3500);
+        }
+    </script>
+
+    <!-- ================= LOGOUT CONFIRM MODAL ================= -->
+    <div id="logout-modal" class="hidden fixed inset-0 z-[80] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm" onclick="if(event.target===this)closeLogoutConfirm()">
+        <div class="w-full max-w-sm bg-darkblue-900 border border-slate-700/60 rounded-2xl shadow-2xl p-6 text-center">
+            <div class="w-14 h-14 mx-auto rounded-full bg-red-500/15 text-red-400 flex items-center justify-center mb-4">
+                <i class="fa-solid fa-right-from-bracket text-xl"></i>
+            </div>
+            <h3 class="text-lg font-bold text-white">Apakah Anda yakin ingin logout?</h3>
+            <p class="text-xs text-slate-400 mt-1.5">Anda akan kembali ke halaman login.</p>
+            <div class="grid grid-cols-2 gap-3 mt-6">
+                <button type="button" onclick="closeLogoutConfirm()"
+                    class="py-2.5 rounded-xl text-sm font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700/50 transition">Tidak</button>
+                <button type="button" onclick="confirmLogout()"
+                    class="py-2.5 rounded-xl text-sm font-bold bg-red-600 hover:bg-red-500 text-white transition">Ya</button>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>
